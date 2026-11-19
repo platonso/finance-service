@@ -2,16 +2,33 @@ package ru.platonso.finance.storage;
 
 import com.google.gson.*;
 import java.nio.file.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import ru.platonso.finance.exception.ValidationException;
 import ru.platonso.finance.model.Wallet;
 
 public final class FileWalletRepository implements WalletRepository {
+  private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
   private final Path dir;
-  private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+  private final Gson gson = createGson();
 
   public FileWalletRepository(Path dir) {
     this.dir = dir;
+  }
+
+  private Gson createGson() {
+    return new GsonBuilder()
+        .registerTypeAdapter(
+            LocalDate.class,
+            (JsonSerializer<LocalDate>)
+                (date, type, context) -> new JsonPrimitive(DATE_FORMAT.format(date)))
+        .registerTypeAdapter(
+            LocalDate.class,
+            (JsonDeserializer<LocalDate>)
+                (json, type, context) -> LocalDate.parse(json.getAsString(), DATE_FORMAT))
+        .setPrettyPrinting()
+        .create();
   }
 
   public Optional<Wallet> load(String login) {
